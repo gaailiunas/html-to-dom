@@ -6,10 +6,12 @@
 #define H2D_TOKEN_ARRAY_INITIAL_LEN 12
 
 enum token_type {
-    TOKEN_TAG,
+    TOKEN_OPEN_TAG,
+    TOKEN_CLOSE_TAG,
     TOKEN_TEXT,
 };
 
+// TODO: make a more memory efficient structure for non-text tokens
 typedef struct token_s  {
     enum token_type type;
     char value[32];

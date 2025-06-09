@@ -1,6 +1,8 @@
 #include <html2dom/lexer.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 static token_array_t *h2d_lexer__array_new()
 {
@@ -36,8 +38,10 @@ static int h2d_lexer__array_add(token_array_t *arr, enum token_type type, char *
     }
     token_t *t = &arr->arr[arr->len];
     t->type = type;
-    memcpy(t->value, value, valuelen);
-    t->value[valuelen] = 0;
+    if (value) {
+        memcpy(t->value, value, valuelen);
+        t->value[valuelen] = 0;
+    }
     arr->len++;
     return 0;
 }
@@ -45,12 +49,56 @@ static int h2d_lexer__array_add(token_array_t *arr, enum token_type type, char *
 token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 {
     token_array_t *arr = h2d_lexer__array_new();
-    if (arr) {
-        for (size_t i = 0; i < len; i++) {
-            // begin tokenizing
+    if (arr == NULL)
+        return NULL;
+
+    // states
+    bool tag_open = false;
+    char text[1024];
+    size_t text_len = 0;
+
+    for (size_t i = 0; i < len; i++) {
+        if (html[i] == '<') {
+            tag_open = true;
+            printf("opening tag\n");
+
+            if (h2d_lexer__array_add(arr, TOKEN_OPEN_TAG, NULL, 0) != 0)
+                goto error;
+
+            continue;
+        }
+        else if (tag_open && html[i] == '>') {
+            tag_open = false;
+            printf("closing tag\n");
+            
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+                goto error;
+
+            text_len = 0;
+
+            if (h2d_lexer__array_add(arr, TOKEN_CLOSE_TAG, NULL, 0) != 0)
+                goto error;
+
+            continue;
+        }
+
+        // read text until whitespace (now just space)
+        if (html[i] == ' ') {
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+                goto error;
+
+            text_len = 0;
+        }
+        else {
+            text[text_len++] = html[i];
         }
     }
+
     return arr;
+
+error:
+    h2d_lexer_tokens_free(arr);
+    return NULL;
 }
 
 void h2d_lexer_tokens_free(token_array_t *arr)

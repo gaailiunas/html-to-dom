@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+const char *strtypes[] = {
+    [TOKEN_OPEN_TAG] = "OPEN_TAG",
+    [TOKEN_CLOSE_TAG] = "CLOSE_TAG",
+    [TOKEN_TEXT] = "TEXT",
+};
+
 DOM *h2d_dom_parse(const char *html, size_t len)
 {
     size_t tokens_len = 0;
@@ -11,7 +17,14 @@ DOM *h2d_dom_parse(const char *html, size_t len)
 
         for (size_t i = 0; i < tokens->len; i++) {
             token_t *t = h2d_lexer_array_get(tokens, i);
-            printf("type:%u name:%s\n", t->type, t->value);
+            printf("type:%s ", strtypes[t->type]);
+            if (t->type == TOKEN_TEXT) {
+                printf("text:%s \n", t->value);
+            }
+            else {
+                printf("\n");
+            }
+
         }
 
         // construct a DOM tree
