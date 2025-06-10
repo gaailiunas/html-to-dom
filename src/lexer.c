@@ -62,7 +62,6 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
     // states
     bool tag_open = false;
     bool tag_name = false;
-    char text[1024];
     size_t text_len = 0;
     bool is_kv_attr = false; // keyvalue
 
@@ -71,7 +70,7 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
             tag_open = true;
             printf("opening tag\n");
 
-            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, (char *)html - text_len + i, text_len) != 0)
                 goto error;
 
             if (h2d_lexer__array_add(arr, TOKEN_OPEN_TAG, NULL, 0) != 0)
@@ -84,11 +83,11 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
             printf("closing tag\n");
             
-            if (!tag_name && text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, text, text_len) != 0) {
+            if (!tag_name && text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, (char *)html - text_len + i, text_len) != 0) {
                 goto error;
             }
             else if (is_kv_attr) {
-                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, text, text_len) != 0)
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, (char *)html - text_len + i, text_len) != 0)
                     goto error;
                 is_kv_attr = false;
             }
@@ -106,17 +105,17 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
         if (html[i] == ' ') {
             // check if its the tag name
             if (tag_open && !tag_name) {
-                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, text, text_len) != 0)
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, (char *)html - text_len + i, text_len) != 0)
                     goto error;
                 tag_name = true;
             }
             else if (tag_open && is_kv_attr) {
-                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, text, text_len) != 0)
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, (char *)html - text_len + i, text_len) != 0)
                     goto error;
                 is_kv_attr = false;
             }
             else {
-                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, (char *)html - text_len + i, text_len) != 0)
                     goto error;
             }
 
@@ -124,14 +123,14 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
         }
         // attr key before =
         else if (html[i] == '=') {
-            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_NAME, text, text_len) != 0)
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_NAME, (char *)html - text_len + i, text_len) != 0)
                 goto error;
 
             text_len = 0;
             is_kv_attr = true;
         }
         else {
-            text[text_len++] = html[i];
+            text_len++;
         }
     }
 
