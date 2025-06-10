@@ -72,6 +72,7 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
             if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, (char *)html - text_len + i, text_len) != 0)
                 goto error;
+            text_len = 0;
 
             if (h2d_lexer__array_add(arr, TOKEN_OPEN_TAG, NULL, 0) != 0)
                 goto error;
