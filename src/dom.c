@@ -6,7 +6,10 @@
 const char *strtypes[] = {
     [TOKEN_OPEN_TAG] = "OPEN_TAG",
     [TOKEN_CLOSE_TAG] = "CLOSE_TAG",
+    [TOKEN_TAG_NAME] = "TAG_NAME",
     [TOKEN_TEXT] = "TEXT",
+    [TOKEN_ATTR_NAME] = "ATTR_NAME",
+    [TOKEN_ATTR_VALUE] = "ATTR_VALUE",
 };
 
 DOM *h2d_dom_parse(const char *html, size_t len)
@@ -18,7 +21,7 @@ DOM *h2d_dom_parse(const char *html, size_t len)
         for (size_t i = 0; i < tokens->len; i++) {
             token_t *t = h2d_lexer_array_get(tokens, i);
             printf("type:%s ", strtypes[t->type]);
-            if (t->type == TOKEN_TEXT) {
+            if (t->value != NULL) {
                 printf("text:%s \n", t->value);
             }
             else {

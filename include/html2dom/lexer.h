@@ -8,13 +8,15 @@
 enum token_type {
     TOKEN_OPEN_TAG,
     TOKEN_CLOSE_TAG,
+    TOKEN_TAG_NAME,
     TOKEN_TEXT,
+    TOKEN_ATTR_NAME,
+    TOKEN_ATTR_VALUE,
 };
 
-// TODO: make a more memory efficient structure for non-text tokens
 typedef struct token_s  {
     enum token_type type;
-    char value[32];
+    char *value;
 } token_t;
 
 typedef struct token_array_s {

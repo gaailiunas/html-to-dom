@@ -13,6 +13,7 @@ static token_array_t *h2d_lexer__array_new()
             free(arr);
             return NULL;
         }
+        arr->len = 0;
         arr->maxlen = H2D_TOKEN_ARRAY_INITIAL_LEN;
     }
     return arr;
@@ -29,7 +30,6 @@ static int h2d_lexer__array_grow(token_array_t *arr)
     return 0;
 }
 
-// valuelen must be >= 31
 static int h2d_lexer__array_add(token_array_t *arr, enum token_type type, char *value, size_t valuelen)
 {
     if (arr->len == arr->maxlen) {
@@ -38,10 +38,17 @@ static int h2d_lexer__array_add(token_array_t *arr, enum token_type type, char *
     }
     token_t *t = &arr->arr[arr->len];
     t->type = type;
-    if (value) {
-        memcpy(t->value, value, valuelen);
-        t->value[valuelen] = 0;
+
+    if (value != NULL) {
+        char *v = (char *)malloc(valuelen + 1);
+        memcpy(v, value, valuelen);
+        v[valuelen] = 0;
+        t->value = v;
     }
+    else {
+        t->value = NULL;
+    }
+
     arr->len++;
     return 0;
 }
@@ -54,13 +61,18 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
     // states
     bool tag_open = false;
+    bool tag_name = false;
     char text[1024];
     size_t text_len = 0;
+    bool is_kv_attr = false; // keyvalue
 
     for (size_t i = 0; i < len; i++) {
         if (html[i] == '<') {
             tag_open = true;
             printf("opening tag\n");
+
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+                goto error;
 
             if (h2d_lexer__array_add(arr, TOKEN_OPEN_TAG, NULL, 0) != 0)
                 goto error;
@@ -69,11 +81,19 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
         }
         else if (tag_open && html[i] == '>') {
             tag_open = false;
+
             printf("closing tag\n");
             
-            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+            if (!tag_name && text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, text, text_len) != 0) {
                 goto error;
+            }
+            else if (is_kv_attr) {
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, text, text_len) != 0)
+                    goto error;
+                is_kv_attr = false;
+            }
 
+            tag_name = false;
             text_len = 0;
 
             if (h2d_lexer__array_add(arr, TOKEN_CLOSE_TAG, NULL, 0) != 0)
@@ -84,10 +104,31 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
         // read text until whitespace (now just space)
         if (html[i] == ' ') {
-            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+            // check if its the tag name
+            if (tag_open && !tag_name) {
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, text, text_len) != 0)
+                    goto error;
+                tag_name = true;
+            }
+            else if (tag_open && is_kv_attr) {
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_VALUE, text, text_len) != 0)
+                    goto error;
+                is_kv_attr = false;
+            }
+            else {
+                if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, text, text_len) != 0)
+                    goto error;
+            }
+
+            text_len = 0;
+        }
+        // attr key before =
+        else if (html[i] == '=') {
+            if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR_NAME, text, text_len) != 0)
                 goto error;
 
             text_len = 0;
+            is_kv_attr = true;
         }
         else {
             text[text_len++] = html[i];
@@ -97,13 +138,18 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
     return arr;
 
 error:
+    printf("error\n");
     h2d_lexer_tokens_free(arr);
     return NULL;
 }
 
 void h2d_lexer_tokens_free(token_array_t *arr)
 {
-    if (arr->arr)
-        free(arr->arr);
+    for (size_t i = 0; i < arr->len; i++) {
+        if (arr->arr[i].value != NULL) {
+            free(arr->arr[i].value);
+        }
+    }
+    free(arr->arr);
     free(arr);
 }
