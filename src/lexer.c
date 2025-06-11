@@ -64,6 +64,7 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
     bool tag_name = false;
     size_t text_len = 0;
     bool is_kv_attr = false; // keyvalue
+    bool is_comment = false;
 
     for (size_t i = 0; i < len; i++) {
         if (html[i] == '<') {
@@ -73,6 +74,18 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
             if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TEXT, (char *)html - text_len + i, text_len) != 0)
                 goto error;
             text_len = 0;
+
+            if (i + 3 < len) {
+                if (html[i + 1] == '!' && html[i + 2] == '-' && html[i + 3] == '-') {
+                    is_comment = true;
+                    i += 3;
+                    
+                    if (h2d_lexer__array_add(arr, TOKEN_COMMENT_BEGIN, NULL, 0) != 0)
+                        goto error;
+
+                    continue;
+                }
+            }
 
             if (h2d_lexer__array_add(arr, TOKEN_OPEN_TAG, NULL, 0) != 0)
                 goto error;
@@ -137,6 +150,24 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
             text_len = 0;
             is_kv_attr = true;
+        }
+        else if (html[i] == '-' && is_comment) {
+            // check for "-->"
+
+            if (i + 2 < len) {
+                if (html[i + 1] == '-' && html[i + 2] == '>') {
+                    is_comment = false;
+
+                    if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_COMMENT_TEXT, (char *)html - text_len + i, text_len) != 0)
+                        goto error;
+
+                    i += 2;
+                    text_len = 0;
+
+                    if (h2d_lexer__array_add(arr, TOKEN_COMMENT_END, NULL, 0) != 0)
+                        goto error;
+                }
+            }
         }
         else {
             text_len++;

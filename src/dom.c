@@ -11,6 +11,9 @@ const char *strtypes[] = {
     [TOKEN_ATTR] = "ATTR",
     [TOKEN_ATTR_NAME] = "ATTR_NAME",
     [TOKEN_ATTR_VALUE] = "ATTR_VALUE",
+    [TOKEN_COMMENT_BEGIN] = "COMMENT_BEGIN",
+    [TOKEN_COMMENT_END] = "COMMENT_END",
+    [TOKEN_COMMENT_TEXT] = "COMMENT_TEXT",
 };
 
 DOM *h2d_dom_parse(const char *html, size_t len)

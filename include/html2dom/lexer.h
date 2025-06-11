@@ -13,6 +13,9 @@ enum token_type {
     TOKEN_ATTR,
     TOKEN_ATTR_NAME,
     TOKEN_ATTR_VALUE,
+    TOKEN_COMMENT_BEGIN,
+    TOKEN_COMMENT_END,
+    TOKEN_COMMENT_TEXT,
 };
 
 typedef struct token_s  {
