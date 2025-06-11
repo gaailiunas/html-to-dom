@@ -121,7 +121,7 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
                 is_kv_attr = false;
             }
             else {
-                if (tag_open && text_len > 0) {
+                if (text_len > 0) {
                     enum token_type t = tag_name ? TOKEN_ATTR : TOKEN_TEXT;
                     if (h2d_lexer__array_add(arr, t, (char *)html - text_len + i, text_len) != 0)
                         goto error;
