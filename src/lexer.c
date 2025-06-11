@@ -95,13 +95,12 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
             else if (tag_name && text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR, (char *)html - text_len + i, text_len) != 0) {
                 goto error;
             }
-            // if text_len > 0, it can be a nonkv attr
             
             if (text_len > 0)
                 printf("text: %.*s\n", text_len, (char *)html - text_len + i);
+
             tag_name = false;
             text_len = 0;
-
 
             if (h2d_lexer__array_add(arr, TOKEN_CLOSE_TAG, NULL, 0) != 0)
                 goto error;
@@ -111,7 +110,6 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
 
         // read text until whitespace (now just space)
         if (html[i] == ' ') {
-            // check if its the tag name
             if (tag_open && !tag_name) {
                 if (text_len > 0 && h2d_lexer__array_add(arr, TOKEN_TAG_NAME, (char *)html - text_len + i, text_len) != 0)
                     goto error;
@@ -123,12 +121,13 @@ token_array_t *h2d_lexer_tokenize(const char *html, size_t len)
                 is_kv_attr = false;
             }
             else {
-                if (tag_name && text_len > 0 && h2d_lexer__array_add(arr, TOKEN_ATTR, (char *)html - text_len + i, text_len) != 0) {
-                    goto error;
+                if (tag_open && text_len > 0) {
+                    enum token_type t = tag_name ? TOKEN_ATTR : TOKEN_TEXT;
+                    if (h2d_lexer__array_add(arr, t, (char *)html - text_len + i, text_len) != 0)
+                        goto error;
                 }
             }
 
-            // if text_len > 0 and in tag, it can be a nonkv attr
             text_len = 0;
         }
         // attr key before =
