@@ -10,6 +10,7 @@ enum token_type {
     TOKEN_CLOSE_TAG,
     TOKEN_TAG_NAME,
     TOKEN_TEXT,
+    TOKEN_ATTR,
     TOKEN_ATTR_NAME,
     TOKEN_ATTR_VALUE,
 };

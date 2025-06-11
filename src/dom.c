@@ -8,6 +8,7 @@ const char *strtypes[] = {
     [TOKEN_CLOSE_TAG] = "CLOSE_TAG",
     [TOKEN_TAG_NAME] = "TAG_NAME",
     [TOKEN_TEXT] = "TEXT",
+    [TOKEN_ATTR] = "ATTR",
     [TOKEN_ATTR_NAME] = "ATTR_NAME",
     [TOKEN_ATTR_VALUE] = "ATTR_VALUE",
 };
